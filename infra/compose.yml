@@ -3,6 +3,38 @@ services:
     container_name: "postgres-dev"
     image: "postgres:16.0-alpine3.18"
     env_file:
-      - ../.env.development
+      - ../.env
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tgml -d tgml"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    build: ../bot
+    container_name: tgml_migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  bot:
+    build: ../bot
+    container_name: tgml_bot
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - ../.env
+    restart: unless-stopped
+    command: ["python", "-m", "app.main"]
+
+volumes:
+  pgdata:
