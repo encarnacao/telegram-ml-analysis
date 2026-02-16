@@ -94,6 +94,9 @@ class Message(Base):
     reply_to_message_id: Mapped[Optional[int]] = mapped_column(
         BigInteger, nullable=True
     )
+    media_type: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, index=True
+    )
     text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(

@@ -3,6 +3,8 @@ Business logic services for message processing and persistence.
 """
 
 import logging
+from typing import Optional
+
 from telegram import Message as TelegramMessage
 from sqlalchemy.dialects.postgresql import insert
 
@@ -10,6 +12,32 @@ from app.database import SessionLocal
 from app.models import Chat, Message, User
 
 logger = logging.getLogger(__name__)
+
+
+def get_media_type(tg_message: TelegramMessage) -> Optional[str]:
+    """
+    Extract media type from a Telegram message.
+
+    Returns the type of media attached to the message, or None if no media.
+    Checks in order of most to least common types.
+    """
+    if tg_message.photo:
+        return "photo"
+    if tg_message.video:
+        return "video"
+    if tg_message.sticker:
+        return "sticker"
+    if tg_message.animation:  # GIFs
+        return "animation"
+    if tg_message.voice:
+        return "voice"
+    if tg_message.video_note:  # Round video messages
+        return "video_note"
+    if tg_message.audio:
+        return "audio"
+    if tg_message.document:
+        return "document"
+    return None
 
 
 def process_message(tg_message: TelegramMessage) -> None:
@@ -71,6 +99,9 @@ def process_message(tg_message: TelegramMessage) -> None:
             if tg_message.reply_to_message:
                 reply_to_message_id = tg_message.reply_to_message.message_id
 
+            # Extract media type if present
+            media_type = get_media_type(tg_message)
+
             # Insert message - ignore duplicates
             msg_stmt = (
                 insert(Message)
@@ -81,6 +112,7 @@ def process_message(tg_message: TelegramMessage) -> None:
                     text=tg_message.text,
                     date=tg_message.date,
                     reply_to_message_id=reply_to_message_id,
+                    media_type=media_type,
                 )
                 .on_conflict_do_nothing(constraint="uq_message_chat")
             )
@@ -90,11 +122,13 @@ def process_message(tg_message: TelegramMessage) -> None:
 
             if result.rowcount > 0:
                 reply_info = f" (reply to {reply_to_message_id})" if reply_to_message_id else ""
+                media_info = f" [{media_type}]" if media_type else ""
                 logger.debug(
-                    "Saved message %d from user %d%s",
+                    "Saved message %d from user %d%s%s",
                     tg_message.message_id,
                     tg_message.from_user.id,
                     reply_info,
+                    media_info,
                 )
             else:
                 logger.debug(
