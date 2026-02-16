@@ -91,6 +91,9 @@ class Message(Base):
     user_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("users.id"), nullable=False
     )
+    reply_to_message_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, nullable=True
+    )
     text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(

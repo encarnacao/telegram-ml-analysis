@@ -66,6 +66,11 @@ def process_message(tg_message: TelegramMessage) -> None:
             )
             db.execute(chat_stmt)
 
+            # Extract reply_to_message_id if this is a reply
+            reply_to_message_id = None
+            if tg_message.reply_to_message:
+                reply_to_message_id = tg_message.reply_to_message.message_id
+
             # Insert message - ignore duplicates
             msg_stmt = (
                 insert(Message)
@@ -75,6 +80,7 @@ def process_message(tg_message: TelegramMessage) -> None:
                     user_id=tg_message.from_user.id,
                     text=tg_message.text,
                     date=tg_message.date,
+                    reply_to_message_id=reply_to_message_id,
                 )
                 .on_conflict_do_nothing(constraint="uq_message_chat")
             )
@@ -83,10 +89,12 @@ def process_message(tg_message: TelegramMessage) -> None:
             db.commit()
 
             if result.rowcount > 0:
+                reply_info = f" (reply to {reply_to_message_id})" if reply_to_message_id else ""
                 logger.debug(
-                    "Saved message %d from user %d",
+                    "Saved message %d from user %d%s",
                     tg_message.message_id,
                     tg_message.from_user.id,
+                    reply_info,
                 )
             else:
                 logger.debug(
