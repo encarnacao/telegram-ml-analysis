@@ -38,11 +38,10 @@ def main() -> None:
 
     # Filter: only text messages (not commands) from the allowed chat
     chat_filter = filters.Chat(chat_id=ALLOWED_CHAT_ID)
-    text_filter = filters.TEXT & ~filters.COMMAND
 
     # Register handler
     application.add_handler(
-        MessageHandler(chat_filter & text_filter, handle_message)
+        MessageHandler(chat_filter, handle_message)
     )
 
     logger.info("Bot handlers registered, starting polling...")

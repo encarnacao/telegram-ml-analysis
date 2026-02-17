@@ -29,18 +29,12 @@ def get_media_type(tg_message: TelegramMessage) -> Optional[str]:
         return "sticker"
     if tg_message.animation:  # GIFs
         return "animation"
-    if tg_message.voice:
-        return "voice"
-    if tg_message.video_note:  # Round video messages
-        return "video_note"
-    if tg_message.audio:
-        return "audio"
     if tg_message.document:
         return "document"
     return None
 
 
-def process_message(tg_message: TelegramMessage) -> None:
+def process_message(tg_message: TelegramMessage, text: str) -> None:
     """
     Process and persist a Telegram message.
 
@@ -109,7 +103,7 @@ def process_message(tg_message: TelegramMessage) -> None:
                     telegram_message_id=tg_message.message_id,
                     chat_id=tg_message.chat.id,
                     user_id=tg_message.from_user.id,
-                    text=tg_message.text,
+                    text=text,
                     date=tg_message.date,
                     reply_to_message_id=reply_to_message_id,
                     media_type=media_type,
